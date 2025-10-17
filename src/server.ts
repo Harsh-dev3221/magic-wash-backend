@@ -1,3 +1,5 @@
+/// <reference types="bun-types" />
+
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
@@ -25,10 +27,29 @@ app.use('*', cors({
         return origin || '*';
       }
     }
-    // In production, only allow specific frontend URL
+
+    // In production, check if origin matches allowed URLs
+    const allowedOrigins = [
+      process.env.FRONTEND_URL,
+      'https://magic-wash-portal-16.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:4173'
+    ].map(url => url?.replace(/\/$/, '')); // Remove trailing slashes
+
+    const cleanOrigin = origin?.replace(/\/$/, '');
+
+    if (allowedOrigins.includes(cleanOrigin)) {
+      return origin;
+    }
+
+    // Fallback to FRONTEND_URL or default
     return process.env.FRONTEND_URL || 'http://localhost:5173';
   },
   credentials: true,
+  allowHeaders: ['Content-Type', 'Authorization'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  exposeHeaders: ['Content-Length', 'X-Request-Id'],
+  maxAge: 600,
 }));
 
 app.use('*', logger());
